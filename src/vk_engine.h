@@ -5,27 +5,70 @@
 
 #include <vk_types.h>
 
-class VulkanEngine {
+struct FrameData
+{
+    VkCommandPool _commandPool{nullptr};
+    VkCommandBuffer _mainCommandBuffer{nullptr};
+
+    VkSemaphore _swapchainSemaphore{nullptr}, _renderSemaphore{nullptr};
+    VkFence _renderFence{nullptr};
+};
+
+constexpr unsigned int FRAME_OVERLAP = 2;
+
+class VulkanEngine
+{
 public:
+    bool       _isInitialized{false};
+    int        _frameNumber{0};
+    bool       stop_rendering{false};
+    VkExtent2D _windowExtent{1700, 900};
 
-	bool _isInitialized{ false };
-	int _frameNumber {0};
-	bool stop_rendering{ false };
-	VkExtent2D _windowExtent{ 1700 , 900 };
+    VkInstance               _instance{nullptr};
+    VkDebugUtilsMessengerEXT _debug_messenger;
+    VkPhysicalDevice         _chosenGPU{nullptr};
+    VkDevice                 _device{nullptr};
+    VkSurfaceKHR             _surface{nullptr};
 
-	struct SDL_Window* _window{ nullptr };
+    VkSwapchainKHR _swapchain{nullptr};
+    VkFormat       _swapchainImageFormat;
 
-	static VulkanEngine& Get();
+    std::vector<VkImage> _swapchainImages;
+    std::vector<VkImageView> _swapchainImageViews;
+    VkExtent2D _swapchainExtent;
 
-	//initializes everything in the engine
-	void init();
+    FrameData _frames[FRAME_OVERLAP];
 
-	//shuts down the engine
-	void cleanup();
+    FrameData& get_current_frame() { return _frames[_frameNumber % FRAME_OVERLAP]; }
 
-	//draw loop
-	void draw();
+    VkQueue _graphicsQueue{nullptr};
+    uint32_t _graphicsQueueFamily;
 
-	//run main loop
-	void run();
+    struct SDL_Window *_window{nullptr};
+
+    static VulkanEngine &Get();
+
+    //initializes everything in the engine
+    void init();
+
+    //shuts down the engine
+    void cleanup();
+
+    //draw loop
+    void draw();
+
+    //run main loop
+    void run();
+
+private:
+    void init_vulkan();
+
+    void init_swapchain();
+
+    void init_commands();
+
+    void init_sync_structures();
+
+    void create_swapchain(uint32_t width, uint32_t height);
+    void destroy_swapchain();
 };
