@@ -5,6 +5,26 @@
 
 #include <vk_types.h>
 
+struct DeletionQueue
+{
+    std::deque<std::function<void()>> deletors;
+
+    void push_function(std::function<void()>&& function)
+    {
+        deletors.push_back(function);
+    }
+
+    void flush()
+    {
+        for (auto it = deletors.rbegin(); it != deletors.rend(); it++)
+        {
+            (*it)();
+        }
+
+        deletors.clear();
+    }
+};
+
 struct FrameData
 {
     VkCommandPool _commandPool{nullptr};
@@ -12,6 +32,8 @@ struct FrameData
 
     VkSemaphore _swapchainSemaphore{nullptr}, _renderSemaphore{nullptr};
     VkFence _renderFence{nullptr};
+
+    DeletionQueue _deletionQueue;
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2;
@@ -37,6 +59,22 @@ public:
     std::vector<VkImageView> _swapchainImageViews;
     VkExtent2D _swapchainExtent;
 
+    struct AllocatedImage
+    {
+        VkImage image{nullptr};
+        VkImageView imageView{nullptr};
+        VmaAllocation allocation{nullptr};
+        VkExtent3D imageExtent;
+        VkFormat imageFormat;
+    };
+
+    AllocatedImage _drawImage{nullptr};
+    VkExtent2D _drawExtent;
+
+    VmaAllocator _allocator{nullptr};
+
+    DeletionQueue _mainDeletionQueue;
+
     FrameData _frames[FRAME_OVERLAP];
 
     FrameData& get_current_frame() { return _frames[_frameNumber % FRAME_OVERLAP]; }
@@ -57,8 +95,11 @@ public:
     //draw loop
     void draw();
 
+    void draw_background(VkCommandBuffer cmd);
+
     //run main loop
     void run();
+
 
 private:
     void init_vulkan();
