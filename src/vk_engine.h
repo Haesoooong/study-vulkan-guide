@@ -37,6 +37,22 @@ struct FrameData
 
 constexpr unsigned int FRAME_OVERLAP = 2;
 
+struct ComputePushConstants {
+    glm::vec4 data1;
+    glm::vec4 data2;
+    glm::vec4 data3;
+    glm::vec4 data4;
+};
+
+struct ComputeEffect {
+    const char* name;
+
+    VkPipeline pipeline;
+    VkPipelineLayout layout;
+
+    ComputePushConstants data;
+};
+
 class VulkanEngine
 {
 public:
@@ -82,6 +98,13 @@ public:
         VkFormat imageFormat;
     };
 
+    VkFence _immFence;
+    VkCommandBuffer _immCommandBuffer;
+    VkCommandPool _immCommandPool;
+
+    std::vector<ComputeEffect> backgroundEffects;
+    int currentBackgroundEffect{0};
+
     FrameData _frames[FRAME_OVERLAP];
 
     FrameData& get_current_frame() { return _frames[_frameNumber % FRAME_OVERLAP]; }
@@ -104,8 +127,12 @@ public:
 
     void draw_background(VkCommandBuffer cmd);
 
+    void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView);
+
     //run main loop
     void run();
+
+    void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
 
 
 private:
@@ -122,6 +149,8 @@ private:
     void init_pipelines();
 
     void init_background_pipelines();
+
+    void init_imgui();
 
     void create_swapchain(uint32_t width, uint32_t height);
     void destroy_swapchain();
