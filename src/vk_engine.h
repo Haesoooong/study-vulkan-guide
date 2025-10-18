@@ -24,26 +24,6 @@ struct DeletionQueue
     }
 };
 
-struct DeletionQueue
-{
-    std::deque<std::function<void()>> deletors;
-
-    void push_function(std::function<void()>&& function)
-    {
-        deletors.push_back(function);
-    }
-
-    void flush()
-    {
-        for (auto it = deletors.rbegin(); it != deletors.rend(); it++)
-        {
-            (*it)();
-        }
-
-        deletors.clear();
-    }
-};
-
 struct FrameData
 {
     VkCommandPool _commandPool{nullptr};
@@ -101,13 +81,6 @@ public:
         VkExtent3D imageExtent;
         VkFormat imageFormat;
     };
-
-    AllocatedImage _drawImage{nullptr};
-    VkExtent2D _drawExtent;
-
-    VmaAllocator _allocator{nullptr};
-
-    DeletionQueue _mainDeletionQueue;
 
     FrameData _frames[FRAME_OVERLAP];
 
