@@ -4,6 +4,25 @@
 #pragma once
 
 #include <vk_types.h>
+#include <vk_descriptors.h>
+
+struct DeletionQueue
+{
+    std::deque<std::function<void()>> deletors;
+
+    void push_function(std::function<void()>&& function) {
+        deletors.push_back(function);
+    }
+
+    void flush() {
+        // reverse iterate the deletion queue to execute all the functions
+        for (auto it = deletors.rbegin(); it != deletors.rend(); it++) {
+            (*it)(); //call functors
+        }
+
+        deletors.clear();
+    }
+};
 
 struct DeletionQueue
 {
@@ -51,6 +70,21 @@ public:
     VkPhysicalDevice         _chosenGPU{nullptr};
     VkDevice                 _device{nullptr};
     VkSurfaceKHR             _surface{nullptr};
+
+    VmaAllocator _allocator;
+
+    DeletionQueue _mainDeletionQueue;
+
+    DescriptorAllocator globalDescriptorAllocator;
+
+    VkDescriptorSet _drawImageDescriptors;
+    VkDescriptorSetLayout _drawImageDescriptorLayout;
+
+    VkPipeline _gradientPipeline;
+    VkPipelineLayout _gradientPipelineLayout;
+
+    AllocatedImage _drawImage;
+    VkExtent2D _drawExtent;
 
     VkSwapchainKHR _swapchain{nullptr};
     VkFormat       _swapchainImageFormat;
@@ -109,6 +143,12 @@ private:
     void init_commands();
 
     void init_sync_structures();
+
+    void init_descriptors();
+
+    void init_pipelines();
+
+    void init_background_pipelines();
 
     void create_swapchain(uint32_t width, uint32_t height);
     void destroy_swapchain();
