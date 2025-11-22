@@ -6,6 +6,8 @@
 #include <vk_types.h>
 #include <vk_descriptors.h>
 
+#include "vk_loader.h"
+
 struct DeletionQueue
 {
     std::deque<std::function<void()>> deletors;
@@ -60,6 +62,9 @@ public:
     int        _frameNumber{0};
     bool       stop_rendering{false};
     VkExtent2D _windowExtent{1700, 900};
+    bool resize_requested{false};
+    VkExtent2D _drawExtent;
+    float renderScale = 1.f;
 
     VkInstance               _instance{nullptr};
     VkDebugUtilsMessengerEXT _debug_messenger;
@@ -80,7 +85,7 @@ public:
     VkPipelineLayout _gradientPipelineLayout;
 
     AllocatedImage _drawImage;
-    VkExtent2D _drawExtent;
+    AllocatedImage _depthImage;
 
     VkSwapchainKHR _swapchain{nullptr};
     VkFormat       _swapchainImageFormat;
@@ -88,6 +93,13 @@ public:
     std::vector<VkImage> _swapchainImages;
     std::vector<VkImageView> _swapchainImageViews;
     VkExtent2D _swapchainExtent;
+
+    VkPipelineLayout _meshPipelineLayout;
+    VkPipeline _meshPipeline;
+
+    std::vector<std::shared_ptr<MeshAsset>> testMeshes;
+
+
 
     struct AllocatedImage
     {
@@ -129,10 +141,20 @@ public:
 
     void draw_imgui(VkCommandBuffer cmd, VkImageView targetImageView);
 
+    void draw_geometry(VkCommandBuffer cmd);
+
     //run main loop
     void run();
 
     void immediate_submit(std::function<void(VkCommandBuffer cmd)>&& function);
+
+    AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
+
+    void destroy_buffer(const AllocatedBuffer& buffer);
+
+    GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices);
+
+    void resize_swapchain();
 
 
 private:
@@ -150,8 +172,13 @@ private:
 
     void init_background_pipelines();
 
+    void init_mesh_pipeline();
+
+    void init_default_data();
+
     void init_imgui();
 
     void create_swapchain(uint32_t width, uint32_t height);
+
     void destroy_swapchain();
 };
