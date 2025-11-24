@@ -95,6 +95,28 @@ struct GLTFMetallic_Roughness {
     MaterialInstance write_material(VkDevice device, MaterialPass pass, const MaterialResources& resources, DescriptorAllocatorGrowable& descriptorAllocator);
 };
 
+struct MeshNode : public Node {
+
+    std::shared_ptr<MeshAsset> mesh;
+
+    virtual void Draw(const glm::mat4& topMatrix, DrawContext& ctx) override;
+};
+
+struct RenderObject {
+    uint32_t indexCount;
+    uint32_t firstIndex;
+    VkBuffer indexBuffer;
+
+    MaterialInstance* material;
+
+    glm::mat4 transform;
+    VkDeviceAddress vertexBufferAddress;
+};
+
+struct DrawContext {
+    std::vector<RenderObject> OpaqueSurfaces;
+};
+
 class VulkanEngine
 {
 public:
@@ -126,6 +148,9 @@ public:
     VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
 
     VkDescriptorSetLayout _singleImageDescriptorLayout;
+
+    VkPipelineLayout _trianglePipelineLayout;
+    VkPipeline _trianglePipeline;
 
     VkPipeline _gradientPipeline;
     VkPipelineLayout _gradientPipelineLayout;
@@ -171,6 +196,11 @@ public:
 
     MaterialInstance defaultData;
     GLTFMetallic_Roughness metalRoughMaterial;
+
+    DrawContext mainDrawContext;
+    std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
+
+    void update_scene();
 
     static VulkanEngine &Get();
 
@@ -221,7 +251,7 @@ private:
     void init_pipelines();
 
     void init_background_pipelines();
-
+    void init_triangle_pipeline();
     void init_mesh_pipeline();
 
     void init_default_data();
