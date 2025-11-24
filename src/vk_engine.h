@@ -35,6 +35,7 @@ struct FrameData
     VkFence _renderFence{nullptr};
 
     DeletionQueue _deletionQueue;
+    DescriptorAllocatorGrowable _frameDescriptors;
 };
 
 constexpr unsigned int FRAME_OVERLAP = 2;
@@ -53,6 +54,15 @@ struct ComputeEffect {
     VkPipelineLayout layout;
 
     ComputePushConstants data;
+};
+
+struct GPUSceneData {
+    glm::mat4 view;
+    glm::mat4 proj;
+    glm::mat4 viewproj;
+    glm::vec4 ambientColor;
+    glm::vec4 sunlightDirection; // w for sun power
+    glm::vec4 sunlightColor;
 };
 
 class VulkanEngine
@@ -81,11 +91,25 @@ public:
     VkDescriptorSet _drawImageDescriptors;
     VkDescriptorSetLayout _drawImageDescriptorLayout;
 
+    GPUSceneData sceneData;
+
+    VkDescriptorSetLayout _gpuSceneDataDescriptorLayout;
+
+    VkDescriptorSetLayout _singleImageDescriptorLayout;
+
     VkPipeline _gradientPipeline;
     VkPipelineLayout _gradientPipelineLayout;
 
     AllocatedImage _drawImage;
     AllocatedImage _depthImage;
+
+    AllocatedImage _whiteImage;
+    AllocatedImage _blackImage;
+    AllocatedImage _greyImage;
+    AllocatedImage _errorCheckerboardImage;
+
+    VkSampler _defaultSamplerLinear;
+    VkSampler _defaultSamplerNearest;
 
     VkSwapchainKHR _swapchain{nullptr};
     VkFormat       _swapchainImageFormat;
@@ -98,17 +122,6 @@ public:
     VkPipeline _meshPipeline;
 
     std::vector<std::shared_ptr<MeshAsset>> testMeshes;
-
-
-
-    struct AllocatedImage
-    {
-        VkImage image{nullptr};
-        VkImageView imageView{nullptr};
-        VmaAllocation allocation{nullptr};
-        VkExtent3D imageExtent;
-        VkFormat imageFormat;
-    };
 
     VkFence _immFence;
     VkCommandBuffer _immCommandBuffer;
@@ -151,6 +164,10 @@ public:
     AllocatedBuffer create_buffer(size_t allocSize, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage);
 
     void destroy_buffer(const AllocatedBuffer& buffer);
+
+    AllocatedImage create_image(VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+    AllocatedImage create_image(void* data, VkExtent3D size, VkFormat format, VkImageUsageFlags usage, bool mipmapped = false);
+    void destroy_image(const AllocatedImage& img);
 
     GPUMeshBuffers uploadMesh(std::span<uint32_t> indices, std::span<Vertex> vertices);
 
