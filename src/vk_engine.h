@@ -116,6 +116,7 @@ struct RenderObject {
 
 struct DrawContext {
     std::vector<RenderObject> OpaqueSurfaces;
+    std::vector<RenderObject> TransparentSurfaces;
 };
 
 class VulkanEngine
@@ -202,6 +203,8 @@ public:
     std::unordered_map<std::string, std::shared_ptr<Node>> loadedNodes;
 
     Camera mainCamera;
+
+    std::unordered_map<std::string, std::shared_ptr<LoadedGLTF>> loadedScenes;
 
     void update_scene();
 
